@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fairy Tale Quest: Irregular Verbs</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700;800&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+            background-attachment: fixed;
+            color: #4a0e4e;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 850px;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            box-sizing: border-box;
+            border: 3px solid #ffd1dc;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(166, 193, 238, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .header { text-align: center; border-bottom: 3px dotted #d8b4e2; padding-bottom: 15px; margin-bottom: 25px; }
+        .header h1 { font-family: 'Dancing Script', cursive; color: #d100b2; font-size: 46px; margin: 0; text-shadow: 2px 2px 4px rgba(209, 0, 178, 0.2); }
+        .header p { font-size: 18px; color: #7b2cbf; margin-top: 5px; font-weight: bold; }
+
+        h2 { 
+            font-family: 'Dancing Script', cursive; font-size: 28px; color: #fff; 
+            background: linear-gradient(90deg, #d8b4e2 0%, #a6c1ee 100%);
+            padding: 5px 20px; border-radius: 20px; display: inline-block;
+            margin-top: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(216, 180, 226, 0.4);
+        }
+        
+        .task-box { 
+            background-color: rgba(255, 255, 255, 0.9); border: 2px solid #e2c2f0; 
+            border-radius: 15px; padding: 20px; margin-bottom: 25px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+        }
+
+        .task-title { font-weight: 800; font-size: 18px; color: #9d4edd; margin-bottom: 15px; border-bottom: 2px dashed #fbc2eb; padding-bottom: 5px;}
+        .q-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 17px; padding: 5px; border-radius: 8px; transition: background 0.3s; }
+        
+        /* 1. Инпуты и Селекты */
+        .int-input, .int-select {
+            font-family: inherit; font-size: 16px; font-weight: bold; color: #d100b2;
+            border: 2px solid #e2c2f0; border-radius: 8px; padding: 4px 10px; margin: 0 8px;
+            background: #fff; outline: none; transition: 0.3s;
+        }
+        .int-input:focus, .int-select:focus { border-color: #f72585; box-shadow: 0 0 8px rgba(247, 37, 133, 0.2); }
+        .int-input { width: 120px; text-align: center; }
+
+        /* 2. Радиокнопки */
+        .radio-label { margin: 0 10px; cursor: pointer; display: flex; align-items: center; color: #5a189a; font-weight: bold; }
+        .radio-label input { margin-right: 5px; cursor: pointer; accent-color: #f72585; width: 18px; height: 18px; }
+
+        /* 3. Чекбоксы */
+        .check-label { display: flex; align-items: center; cursor: pointer; font-weight: bold; color: #7209b7; width: 100%; }
+        .check-label input { margin-right: 15px; width: 22px; height: 22px; accent-color: #a6c1ee; cursor: pointer; }
+
+        /* 4. Кнопки True/False (Toggle) */
+        .toggle-btn {
+            background: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 8px;
+            padding: 5px 15px; margin: 0 5px; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.2s;
+        }
+        .toggle-btn.selected-true { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+        .toggle-btn.selected-false { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+
+        /* 5. Кнопки слов (Inline Words) */
+        .word-btn {
+            background: #fff; border: 2px solid #d8b4e2; border-radius: 20px;
+            padding: 4px 12px; margin: 0 4px; font-weight: bold; color: #9d4edd; cursor: pointer; transition: 0.2s;
+        }
+        .word-btn.selected { background: #d100b2; color: #fff; border-color: #d100b2; box-shadow: 0 4px 8px rgba(209, 0, 178, 0.3); }
+
+        /* Состояния проверки */
+        .correct-bg { background-color: #f0fdf4 !important; border: 2px solid #4ade80 !important; }
+        .incorrect-bg { background-color: #fff1f2 !important; border: 2px solid #fb7185 !important; }
+
+        /* Главная кнопка */
+        .magic-btn {
+            display: block; width: 100%; background: linear-gradient(45deg, #f72585, #b5179e); color: #fff;
+            font-family: inherit; font-size: 22px; font-weight: 800; padding: 18px; border: none; border-radius: 20px;
+            cursor: pointer; margin-top: 10px; box-shadow: 0 8px 20px rgba(247, 37, 133, 0.4); transition: transform 0.2s;
+        }
+        .magic-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(247, 37, 133, 0.6); }
+
+        .result-box {
+            display: none; text-align: center; font-size: 22px; font-weight: bold; color: #5a189a;
+            background-color: #fff; padding: 25px; border-radius: 15px; margin-top: 25px;
+            border: 3px solid #d8b4e2; box-shadow: 0 5px 15px rgba(216, 180, 226, 0.5);
+        }
+        .result-box h3 { font-family: 'Dancing Script', cursive; font-size: 36px; margin: 0 0 10px 0; color: #f72585; }
+    </style>
+</head>
+<body>
+
+    <div class="page">
+        <div class="header">
+            <h1>🌸 The Great Fairy Exam 🌸</h1>
+            <p>6 Magic Challenges • 36 Secret Spells</p>
+        </div>
+
+        <h2>Challenge 1: The Magic Scrolls 📜</h2>
+        <div class="task-box">
+            <div class="task-title">Mechanic: Dropdown Select. Choose the correct V2 form.</div>
+            <div class="q-row" data-type="select" data-answer="found">1. The fairy lost her wand, but then she <select class="int-select"><option value="">...</option><option value="finded">finded</option><option value="found">found</option></select> it.</div>
+            <div class="q-row" data-type="select" data-answer="gave">2. The King <select class="int-select"><option value="">...</option><option value="give">give</option><option value="gave">gave</option></select> me a golden star.</div>
+            <div class="q-row" data-type="select" data-answer="drew">3. I <select class="int-select"><option value="">...</option><option value="drawed">drawed</option><option value="drew">drew</option></select> a magical circle.</div>
+            <div class="q-row" data-type="select" data-answer="fell">4. An apple <select class="int-select"><option value="">...</option><option value="fell">fell</option><option value="felled">felled</option></select> from the magic tree.</div>
+            <div class="q-row" data-type="select" data-answer="grew">5. The beanstalk <select class="int-select"><option value="">...</option><option value="grew">grew</option><option value="growed">growed</option></select> very tall!</div>
+            <div class="q-row" data-type="select" data-answer="flew">6. The pink dragon <select class="int-select"><option value="">...</option><option value="flied">flied</option><option value="flew">flew</option></select> away.</div>
+        </div>
+
+        <h2>Challenge 2: The Blank Runes 🪶</h2>
+        <div class="task-box">
+            <div class="task-title">Mechanic: Text Input. Type the Past Tense (V2) of the verb in brackets.</div>
+            <div class="q-row" data-type="input" data-answer="slept">1. The princess <input type="text" class="int-input" placeholder="(sleep)"> for 100 years.</div>
+            <div class="q-row" data-type="input" data-answer="rode">2. The elf <input type="text" class="int-input" placeholder="(ride)"> a white unicorn.</div>
+            <div class="q-row" data-type="input" data-answer="swam">3. A mermaid <input type="text" class="int-input" placeholder="(swim)"> in the lake.</div>
+            <div class="q-row" data-type="input" data-answer="won">4. We <input type="text" class="int-input" placeholder="(win)"> the magic tournament!</div>
+            <div class="q-row" data-type="input" data-answer="bought">5. She <input type="text" class="int-input" placeholder="(buy)"> a new flying broom.</div>
+            <div class="q-row" data-type="input" data-answer="brought">6. My owl <input type="text" class="int-input" placeholder="(bring)"> me a letter.</div>
+        </div>
+
+        <h2>Challenge 3: The Crystal Balls 🔮</h2>
+        <div class="task-box">
+            <div class="task-title">Mechanic: Radio Buttons. Select the correct bubble.</div>
+            <div class="q-row" data-type="radio" data-answer="sang">1. She 
+                <label class="radio-label"><input type="radio" name="q3_1" value="singed">singed</label>
+                <label class="radio-label"><input type="radio" name="q3_1" value="sang">sang</label>
+            a beautiful song.</div>
+            <div class="q-row" data-type="radio" data-answer="threw">2. He 
+                <label class="radio-label"><input type="radio" name="q3_2" value="threw">threw</label>
+                <label class="radio-label"><input type="radio" name="q3_2" value="throwed">throwed</label>
+            a magic potion.</div>
+            <div class="q-row" data-type="radio" data-answer="heard">3. We 
+                <label class="radio-label"><input type="radio" name="q3_3" value="heared">heared</label>
+                <label class="radio-label"><input type="radio" name="q3_3" value="heard">heard</label>
+            a strange sound.</div>
+            <div class="q-row" data-type="radio" data-answer="hid">4. The gnome 
+                <label class="radio-label"><input type="radio" name="q3_4" value="hid">hid</label>
+                <label class="radio-label"><input type="radio" name="q3_4" value="hided">hided</label>
+            under the mushroom.</div>
+            <div class="q-row" data-type="radio" data-answer="built">5. They 
+                <label class="radio-label"><input type="radio" name="q3_5" value="builded">builded</label>
+                <label class="radio-label"><input type="radio" name="q3_5" value="built">built</label>
+            a sand castle.</div>
+            <div class="q-row" data-type="radio" data-answer="lost">6. I 
+                <label class="radio-label"><input type="radio" name="q3_6" value="lost">lost</label>
+                <label class="radio-label"><input type="radio" name="q3_6" value="losed">losed</label>
+            my favorite ring.</div>
+        </div>
+
+        <h2>Challenge 4: The Truth Potions 🧪</h2>
+        <div class="task-box">
+            <div class="task-title">Mechanic: Checkboxes. Tick the box ONLY IF the V1 -> V2 pair is CORRECT.</div>
+            <div class="q-row" data-type="checkbox" data-answer="true">
+                <label class="check-label"><input type="checkbox"> 1. catch ➡️ caught</label>
+            </div>
+            <div class="q-row" data-type="checkbox" data-answer="false">
+                <label class="check-label"><input type="checkbox"> 2. think ➡️ thinked</label>
+            </div>
+            <div class="q-row" data-type="checkbox" data-answer="true">
+                <label class="check-label"><input type="checkbox"> 3. begin ➡️ began</label>
+            </div>
+            <div class="q-row" data-type="checkbox" data-answer="true">
+                <label class="check-label"><input type="checkbox"> 4. feel ➡️ felt</label>
+            </div>
+            <div class="q-row" data-type="checkbox" data-answer="false">
+                <label class="check-label"><input type="checkbox"> 5. keep ➡️ keeped</label>
+            </div>
+            <div class="q-row" data-type="checkbox" data-answer="true">
+                <label class="check-label"><input type="checkbox"> 6. hold ➡️ held</label>
+            </div>
+        </div>
+
+        <h2>Challenge 5: The Fairy Judge ⚖️</h2>
+        <div class="task-box">
+            <div class="task-title">Mechanic: Toggle Buttons. Is the spelling in the sentence Right or Wrong?</div>
+            <div class="q-row" data-type="toggle" data-answer="false">1. I   speaked to the Troll. 
+                <button class="toggle-btn" onclick="setToggle(this, 'true')">Right</button>
+                <button class="toggle-btn" onclick="setToggle(this, 'false')">Wrong</button>
+            </div>
+            <div class="q-row" data-type="toggle" data-answer="true">2. She  wore a pink dress. 
+                <button class="toggle-btn" onclick="setToggle(this, 'true')">Right</button>
+                <button class="toggle-btn" onclick="setToggle(this, 'false')">Wrong</button>
+            </div>
+            <div class="q-row" data-type="toggle" data-answer="false">3. We sitted on the grass. 
+                <button class="toggle-btn" onclick="setToggle(this, 'true')">Right</button>
+                <button class="toggle-btn" onclick="setToggle(this, 'false')">Wrong</button>
+            </div>
+            <div class="q-row" data-type="toggle" data-answer="true">4. The wind blew softly. 
+                <button class="toggle-btn" onclick="setToggle(this, 'true')">Right</button>
+                <button class="toggle-btn" onclick="setToggle(this, 'false')">Wrong</button>
+            </div>
+            <div class="q-row" data-type="toggle" data-answer="false">5. He breaked his wand. 
+                <button class="toggle-btn" onclick="setToggle(this, 'true')">Right</button>
+                <button class="toggle-btn" onclick="setToggle(this, 'false')">Wrong</button>
+            </div>
+            <div class="q-row" data-type="toggle" data-answer="true">6. They met a mermaid. 
+                <button class="toggle-btn" onclick="setToggle(this, 'true')">Right</button>
+                <button class="toggle-btn" onclick="setToggle(this, 'false')">Wrong</button>
+            </div>
+        </div>
+
+        <h2>Challenge 6: The Magic Words 🪄</h2>
+        <div class="task-box">
+            <div class="task-title">Mechanic: Word Selector. Click the correct word to complete the spell.</div>
+            <div class="q-row" data-type="words" data-answer="knew">1. I <button class="word-btn" onclick="setWord(this)">knowed</button> <button class="word-btn" onclick="setWord(this)">knew</button> <button class="word-btn" onclick="setWord(this)">known</button> all the answers!</div>
+            <div class="q-row" data-type="words" data-answer="ran">2. The unicorn <button class="word-btn" onclick="setWord(this)">ran</button> <button class="word-btn" onclick="setWord(this)">runned</button> <button class="word-btn" onclick="setWord(this)">run</button> over the rainbow.</div>
+            <div class="q-row" data-type="words" data-answer="took">3. She <button class="word-btn" onclick="setWord(this)">taked</button> <button class="word-btn" onclick="setWord(this)">taken</button> <button class="word-btn" onclick="setWord(this)">took</button> my book.</div>
+            <div class="q-row" data-type="words" data-answer="came">4. A giant <button class="word-btn" onclick="setWord(this)">come</button> <button class="word-btn" onclick="setWord(this)">came</button> <button class="word-btn" onclick="setWord(this)">comed</button> to the party.</div>
+            <div class="q-row" data-type="words" data-answer="ate">5. We <button class="word-btn" onclick="setWord(this)">ate</button> <button class="word-btn" onclick="setWord(this)">eated</button> <button class="word-btn" onclick="setWord(this)">eat</button> magic apples.</div>
+            <div class="q-row" data-type="words" data-answer="drank">6. They <button class="word-btn" onclick="setWord(this)">drinked</button> <button class="word-btn" onclick="setWord(this)">drunk</button> <button class="word-btn" onclick="setWord(this)">drank</button> pink potion.</div>
+        </div>
+
+        <button class="magic-btn" onclick="checkAllMagic()">✨ Reveal Exam Results ✨</button>
+        <div id="final-result" class="result-box"></div>
+    </div>
+
+    <script>
+        // Скрипты для интерфейса
+        function setToggle(btn, val) {
+            let parent = btn.parentElement;
+            parent.querySelectorAll('.toggle-btn').forEach(b => {
+                b.classList.remove('selected-true', 'selected-false');
+            });
+            btn.classList.add('selected-' + val);
+            parent.dataset.userAnswer = val;
+        }
+
+        function setWord(btn) {
+            let parent = btn.parentElement;
+            parent.querySelectorAll('.word-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            parent.dataset.userAnswer = btn.innerText.trim().toLowerCase();
+        }
+
+        // Главная автопроверка всех 36 заданий
+        function checkAllMagic() {
+            let rows = document.querySelectorAll('.q-row');
+            let score = 0;
+            let total = rows.length; // 36
+
+            rows.forEach(row => {
+                let type = row.dataset.type;
+                let correctAnswer = row.dataset.answer.toLowerCase();
+                let isCorrect = false;
+
+                // Сброс стилей
+                row.classList.remove('correct-bg', 'incorrect-bg');
+
+                if (type === 'select') {
+                    let val = row.querySelector('select').value.toLowerCase();
+                    if (val === correctAnswer) isCorrect = true;
+                } 
+                else if (type === 'input') {
+                    let val = row.querySelector('input').value.toLowerCase().trim();
+                    if (val === correctAnswer && val !== "") isCorrect = true;
+                } 
+                else if (type === 'radio') {
+                    let checked = row.querySelector('input[type="radio"]:checked');
+                    if (checked && checked.value.toLowerCase() === correctAnswer) isCorrect = true;
+                } 
+                else if (type === 'checkbox') {
+                    let checked = row.querySelector('input[type="checkbox"]').checked;
+                    let ansBool = (correctAnswer === 'true');
+                    if (checked === ansBool) isCorrect = true; 
+                } 
+                else if (type === 'toggle' || type === 'words') {
+                    let val = row.dataset.userAnswer;
+                    if (val && val === correctAnswer) isCorrect = true;
+                }
+
+                // Добавляем подсветку результата
+                if (isCorrect) {
+                    row.classList.add('correct-bg');
+                    score++;
+                } else {
+                    row.classList.add('incorrect-bg');
+                }
+            });
+
+            // Вывод результата
+            let resBox = document.getElementById('final-result');
+            let title = "";
+            let text = "";
+
+            if (score === total) {
+                title = "🌟 Supreme Archmage! 🌟";
+                text = "Incredible! You didn't make a single mistake. The fairy realm is proud of you!";
+            } else if (score >= 25) {
+                title = "🦋 Advanced Wizard! 🦋";
+                text = "Great job! Just a few tricky spells slipped away. Look at the red boxes to fix them.";
+            } else {
+                title = "🍄 Beginner Fairy 🍄";
+                text = "Magic is hard to learn! Practice the red spells again and you will succeed.";
+            }
+
+            resBox.innerHTML = `<h3>${title}</h3>You got <b>${score} out of ${total}</b> spells correct!<br><br><span style="font-size:18px;">${text}</span>`;
+            resBox.style.display = 'block';
+            
+            // Плавный скролл к результату
+            resBox.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+    </script>
+</body>
+</html>

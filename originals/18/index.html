@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Christmas Verb Adventure — Sparkle Trail</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial, sans-serif;}
+canvas{display:block;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:50;}
+.modal-content{background:#fff;padding:28px;border-radius:14px;width:460px;text-align:center;}
+button{cursor:pointer;font-size:16px;padding:10px 20px;margin:8px;}
+#controls{position:fixed;right:18px;bottom:28px;display:flex;flex-direction:column;gap:12px;z-index:60;}
+#controls button{width:66px;height:66px;border-radius:999px;border:0;font-size:30px;background:rgba(255,255,255,0.92);user-select:none;}
+.answers-container{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;}
+.answers-container button{min-width:100px;}
+@media(max-width:520px){.modal-content{width:92%;}}
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="controls">
+  <button id="btnUp">⬆️</button>
+  <button id="btnDown">⬇️</button>
+</div>
+
+<div id="startModal" class="modal" style="display:flex;">
+  <div class="modal-content">
+    <h2>🧝 Hello, traveler!</h2>
+    <p>Fly and learn English.<br>
+       Collect magic items +10 points 🎁<br>
+       Answer questions +100 points 📚<br>
+       Avoid evil elves.<br>
+    </p>
+    <button id="startBtn">START</button>
+  </div>
+</div>
+
+<div id="questionModal" class="modal">
+  <div class="modal-content">
+    <h3 id="questionText"></h3>
+    <div id="answers" class="answers-container"></div>
+  </div>
+</div>
+
+<div id="gameOverModal" class="modal">
+  <div class="modal-content">
+    <h2 id="endTitle"></h2>
+    <p id="finalScore"></p>
+    <button id="restartBtn">Restart</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+window.addEventListener('resize',resize);resize();
+
+/* Assets */
+const bg = new Image(); bg.src="../../assets/18-0.webp";
+const playerImg = new Image(); playerImg.src="../../assets/18-6.webp";
+const obstacleImages = ["../../assets/18-4.webp","../../assets/18-5.webp"].map(s=>{let im=new Image();im.src=s;return im;});
+const bonusImages = ["../../assets/18-1.webp","../../assets/18-2.webp","../../assets/18-3.webp"].map(s=>{let im=new Image();im.src=s;return im;});
+
+/* State */
+let score=0,lives=3,frame=0,speedLevel=1,gameOver=false,paused=true;
+const controls={up:false,down:false};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowUp') controls.up=true;if(e.key==='ArrowDown') controls.down=true;});
+document.addEventListener('keyup',e=>{if(e.key==='ArrowUp') controls.up=false;if(e.key==='ArrowDown') controls.down=false;});
+function bindButton(id,dir){const b=document.getElementById(id);b.addEventListener('mousedown',()=>controls[dir]=true);b.addEventListener('mouseup',()=>controls[dir]=false);b.addEventListener('mouseleave',()=>controls[dir]=false);b.addEventListener('touchstart',e=>{e.preventDefault();controls[dir]=true});b.addEventListener('touchend',()=>controls[dir]=false);}
+bindButton('btnUp','up'); bindButton('btnDown','down');
+document.getElementById('startBtn').addEventListener('click',startGame);
+document.getElementById('restartBtn').addEventListener('click',restartGame);
+
+/* Player */
+const player={x:90,y:canvas.height*0.5,w:160,h:160,baseSpeed:5,get speed(){return this.baseSpeed+speedLevel;}};
+
+/* Objects */
+let obstacles=[],bonuses=[];
+
+/* Questions */
+const allQuestions=[
+  { q:"I ___ a boy.",a:["am","is"],c:"am" },
+  { q:"She ___ my friend.",a:["am","is"],c:"is" },
+  { q:"They ___ happy.",a:["is","are"],c:"are" },
+  { q:"I ___ six.",a:["am","are"],c:"am" },
+  { q:"He ___ a pupil.",a:["am","is"],c:"is" },
+  { q:"We ___ at school.",a:["is","are"],c:"are" },
+  { q:"The cat ___ big.",a:["am","is"],c:"is" },
+  { q:"You ___ my friend.",a:["am","are"],c:"are" },
+  { q:"The boys ___ in the park.",a:["is","are"],c:"are" },
+  { q:"It ___ a dog.",a:["am","is"],c:"is" }
+];
+let questions=[...allQuestions];
+
+/* Particles from lower-left corner */
+const particles=[];
+function spawnParticle(px,py,vx,vy){
+  const p={x:px,y:py,vx:vx,vy:vy,life:40+Math.random()*30,size:2+Math.random()*4,hue:40+Math.random()*40,alpha:1};
+  particles.push(p);
+}
+function updateParticles(){for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vx*=0.99;p.vy*=0.99;p.life-=1;p.alpha=Math.max(0,p.life/60);if(p.life<=0) particles.splice(i,1);}}
+function drawParticles(ctx){for(const p of particles){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*3);g.addColorStop(0,`rgba(255,245,200,${Math.min(1,p.alpha)})`);g.addColorStop(0.4,`rgba(255,200,80,${p.alpha*0.9})`);g.addColorStop(1,`rgba(80,40,0,${p.alpha*0.12})`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.size*(1+(1-p.alpha)),0,Math.PI*2);ctx.fill();}}
+
+/* Utilities */
+function rndFrom(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+/* Spawn objects */
+function spawnObstacle(){let s=120+Math.random()*70;obstacles.push({x:canvas.width+s,y:Math.random()*(canvas.height-s),w:s,h:s,speed:3+speedLevel+Math.random()*1.5,img:rndFrom(obstacleImages)});}
+function spawnBonus(){let s=90+Math.random()*50;bonuses.push({x:canvas.width+s,y:Math.random()*(canvas.height-s),w:s,h:s,speed:2+speedLevel+Math.random()*1.2,img:rndFrom(bonusImages)});}
+function collide(a,b){return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;}
+
+/* Questions UI */
+const qModal=document.getElementById('questionModal'),qText=document.getElementById('questionText'),qAnswers=document.getElementById('answers');
+function showQuestion(){paused=true;if(questions.length===0){finishGame();return;}const q=questions.shift();qText.innerText=q.q;qAnswers.innerHTML='';q.a.forEach(ans=>{const btn=document.createElement('button');btn.innerText=ans;btn.onclick=()=>{qModal.style.display='none';paused=false;if(ans===q.c){score+=100;}else{lives--;};updateSpeed();};qAnswers.appendChild(btn);});qModal.style.display='flex';}
+
+/* Game flow */
+function startGame(){document.getElementById('startModal').style.display='none';paused=false;loop();}
+function finishGame(){gameOver=true;document.getElementById('endTitle').innerText='Well done!';document.getElementById('finalScore').innerText='Score: '+score;document.getElementById('gameOverModal').style.display='flex';}
+function endGameLoss(){gameOver=true;document.getElementById('endTitle').innerText='Game Over';document.getElementById('finalScore').innerText='Score: '+score;document.getElementById('gameOverModal').style.display='flex';}
+function restartGame(){window.location.reload();}
+function updateSpeed(){speedLevel=Math.floor(score/300)+1;}
+
+/* Main loop */
+function loop(){
+  if(gameOver) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(bg,0,0,canvas.width,canvas.height);
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if(!paused){
+    if(controls.up) player.y-=player.speed;
+    if(controls.down) player.y+=player.speed;
+    if(player.y<0) player.y=0; if(player.y+player.h>canvas.height) player.y=canvas.height-player.h;
+    for(const o of obstacles) o.x-=o.speed;
+    for(const b of bonuses) b.x-=b.speed;
+  }
+
+  // particle trail from lower-left corner only
+  const emitCount=controls.up||controls.down?6:1;
+  for(let i=0;i<emitCount;i++){
+    const px=player.x; const py=player.y+player.h; 
+    const vx=-1.2-speedLevel*0.25-Math.random()*0.6; const vy=(Math.random()-0.5)*0.6;
+    spawnParticle(px,py,vx,vy);
+  }
+  updateParticles(); drawParticles(ctx);
+
+  ctx.drawImage(playerImg,player.x,player.y,player.w,player.h);
+
+  for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];ctx.drawImage(o.img,o.x,o.y,o.w,o.h);if(!paused && collide(player,o)){lives--;obstacles.splice(i,1);if(lives<=0)setTimeout(()=>endGameLoss(),250);continue;}if(o.x+o.w<-100)obstacles.splice(i,1);}
+
+  // collect bonus only if center of player is inside center area of bonus
+  for(let i=bonuses.length-1;i>=0;i--){
+    const b=bonuses[i];
+    ctx.drawImage(b.img,b.x,b.y,b.w,b.h);
+    const pxCenter=player.x+player.w/2;
+    const pyCenter=player.y+player.h/2;
+    const bxCenter=b.x+b.w/2;
+    const byCenter=b.y+b.h/2;
+    const dist=Math.hypot(pxCenter-bxCenter,pyCenter-byCenter);
+    if(!paused && dist < Math.min(player.w,player.h)/2){
+      score+=10;updateSpeed();bonuses.splice(i,1);continue;
+    }
+    if(b.x+b.w<-100) bonuses.splice(i,1);
+  }
+
+  ctx.font='26px Arial'; ctx.fillStyle='#fff';
+  for(let i=0;i<lives;i++) ctx.fillText('❤️',20+i*36,44);
+  ctx.fillText('Score: '+score,20,88);
+  ctx.fillText('Speed x'+speedLevel,20,126);
+
+  frame++;
+  if(!paused){
+    if(frame % Math.max(60,120-speedLevel*6)===0) spawnObstacle();
+    if(frame % Math.max(120,200-speedLevel*10)===0) spawnBonus();
+    if(frame % 600===0) showQuestion();
+  }
+
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

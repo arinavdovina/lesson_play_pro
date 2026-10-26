@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Christmas Verb Adventure</title>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: black;
+    font-family: Arial, sans-serif;
+}
+
+canvas {
+    display: block;
+}
+
+/* ================= MODALS ================= */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    width: 420px;
+    text-align: center;
+}
+
+button {
+    margin: 8px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* ================= ON-SCREEN CONTROLS ================= */
+#controls {
+    position: fixed;
+    right: 20px;
+    bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 20;
+}
+
+#controls button {
+    width: 70px;
+    height: 70px;
+    font-size: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.85);
+    user-select: none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- SCREEN CONTROLS -->
+<div id="controls">
+    <button id="btnUp">⬆️</button>
+    <button id="btnDown">⬇️</button>
+</div>
+
+<!-- QUESTION -->
+<div id="questionModal" class="modal">
+    <div class="modal-content">
+        <h3 id="questionText"></h3>
+        <div id="answers"></div>
+    </div>
+</div>
+
+<!-- GAME END -->
+<div id="gameOverModal" class="modal">
+    <div class="modal-content">
+        <h2 id="endTitle"></h2>
+        <p id="finalScore"></p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+</div>
+
+<script>
+/* ================= CANVAS ================= */
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
+/* ================= IMAGES ================= */
+const bg = new Image();
+bg.src = "../../assets/6-0.webp";
+
+const playerImg = new Image();
+playerImg.src = "../../assets/6-3.webp";
+
+const obstacleImg = new Image();
+obstacleImg.src = "https://i.postimg.cc/wMxNN5qx/2.png";
+
+const bonusImg = new Image();
+bonusImg.src = "../../assets/6-1.webp";
+
+/* ================= GAME STATE ================= */
+let score = 0;
+let lives = 3;
+let gameOver = false;
+let pausedByQuestion = false;
+let frame = 0;
+let speedLevel = 1;
+
+/* ================= CONTROLS ================= */
+const controls = { up:false, down:false };
+
+document.addEventListener("keydown", e => {
+    if (e.key === "ArrowUp") controls.up = true;
+    if (e.key === "ArrowDown") controls.down = true;
+});
+document.addEventListener("keyup", e => {
+    if (e.key === "ArrowUp") controls.up = false;
+    if (e.key === "ArrowDown") controls.down = false;
+});
+
+function bindButton(id, dir) {
+    const btn = document.getElementById(id);
+    btn.addEventListener("mousedown", ()=>controls[dir]=true);
+    btn.addEventListener("mouseup", ()=>controls[dir]=false);
+    btn.addEventListener("mouseleave", ()=>controls[dir]=false);
+    btn.addEventListener("touchstart", e=>{
+        e.preventDefault(); controls[dir]=true;
+    });
+    btn.addEventListener("touchend", ()=>controls[dir]=false);
+}
+bindButton("btnUp","up");
+bindButton("btnDown","down");
+
+/* ================= PLAYER ================= */
+const player = {
+    x: 80,
+    y: canvas.height / 2,
+    w: 100,
+    h: 100,
+    baseSpeed: 5,
+    get speed() {
+        return this.baseSpeed + speedLevel;
+    }
+};
+
+/* ================= OBJECTS ================= */
+let obstacles = [];
+let bonuses = [];
+
+/* ================= QUESTIONS ================= */
+const allQuestions = [
+ {q:"I ___ a boy.",a:["am","is"],c:"am"},
+ {q:"She ___ my friend.",a:["am","is"],c:"is"},
+ {q:"They ___ happy.",a:["is","are"],c:"are"},
+ {q:"I ___ six.",a:["am","are"],c:"am"},
+ {q:"He ___ a pupil.",a:["am","is"],c:"is"},
+ {q:"We ___ at school.",a:["is","are"],c:"are"},
+ {q:"The cat ___ big.",a:["am","is"],c:"is"},
+ {q:"You ___ my friend.",a:["am","are"],c:"are"},
+ {q:"The boys ___ in the park.",a:["is","are"],c:"are"},
+ {q:"It ___ a dog.",a:["am","is"],c:"is"}
+];
+let questions = [...allQuestions];
+
+/* ================= FUNCTIONS ================= */
+function updateSpeed() {
+    speedLevel = Math.floor(score / 300) + 1;
+}
+
+function updatePlayer() {
+    if (controls.up) player.y -= player.speed;
+    if (controls.down) player.y += player.speed;
+
+    if (player.y < 0) player.y = 0;
+    if (player.y + player.h > canvas.height)
+        player.y = canvas.height - player.h;
+}
+
+function spawnObstacle() {
+    const s = 50 + Math.random() * 60;
+    obstacles.push({
+        x: canvas.width,
+        y: Math.random() * (canvas.height - s),
+        w: s,
+        h: s,
+        speed: 3 + speedLevel
+    });
+}
+
+function spawnBonus() {
+    const s = 40 + Math.random() * 40;
+    bonuses.push({
+        x: canvas.width,
+        y: Math.random() * (canvas.height - s),
+        w: s,
+        h: s,
+        speed: 2 + speedLevel
+    });
+}
+
+function collide(a, b) {
+    return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+    );
+}
+
+/* ================= QUESTIONS ================= */
+function showQuestion() {
+    if (questions.length === 0) {
+        finishGame();
+        return;
+    }
+
+    pausedByQuestion = true;
+    const q = questions.shift();
+
+    document.getElementById("questionText").innerText = q.q;
+    const ans = document.getElementById("answers");
+    ans.innerHTML = "";
+
+    q.a.forEach(x => {
+        const b = document.createElement("button");
+        b.innerText = x;
+        b.onclick = () => {
+            document.getElementById("questionModal").style.display = "none";
+            pausedByQuestion = false;
+
+            if (x === q.c) score += 100;
+            else lives--;
+
+            updateSpeed();
+        };
+        ans.appendChild(b);
+    });
+
+    document.getElementById("questionModal").style.display = "flex";
+}
+
+/* ================= ENDINGS ================= */
+function finishGame() {
+    gameOver = true;
+    document.getElementById("endTitle").innerText = "Well done!";
+    document.getElementById("finalScore").innerText = "Score: " + score;
+    document.getElementById("gameOverModal").style.display = "flex";
+}
+
+function restartGame() {
+    score = 0;
+    lives = 3;
+    frame = 0;
+    speedLevel = 1;
+    obstacles = [];
+    bonuses = [];
+    questions = [...allQuestions];
+    gameOver = false;
+    pausedByQuestion = false;
+    document.getElementById("gameOverModal").style.display = "none";
+    loop();
+}
+
+/* ================= MAIN LOOP ================= */
+function loop() {
+    if (gameOver) return;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(bg,0,0,canvas.width,canvas.height);
+
+    if (!pausedByQuestion) {
+        updatePlayer();
+        obstacles.forEach(o => o.x -= o.speed);
+        bonuses.forEach(b => b.x -= b.speed);
+    }
+
+    ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
+
+    obstacles.forEach(o => {
+        ctx.drawImage(obstacleImg, o.x, o.y, o.w, o.h);
+        if (!pausedByQuestion && collide(player, o)) {
+            lives--;
+            o.x = -999;
+        }
+    });
+
+    bonuses.forEach(b => {
+        ctx.drawImage(bonusImg, b.x, b.y, b.w, b.h);
+        if (!pausedByQuestion && collide(player, b)) {
+            score += 10;
+            updateSpeed();
+            b.x = -999;
+        }
+    });
+
+    ctx.font = "24px Arial";
+    for (let i = 0; i < lives; i++) {
+        ctx.fillText("❤️", 20 + i * 30, 40);
+    }
+    ctx.fillText("Score: " + score, 20, 80);
+
+    frame++;
+    if (!pausedByQuestion) {
+        if (frame % 120 === 0) spawnObstacle();
+        if (frame % 200 === 0) spawnBonus();
+        if (frame % 600 === 0) showQuestion();
+    }
+
+    if (lives <= 0) finishGame();
+
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>

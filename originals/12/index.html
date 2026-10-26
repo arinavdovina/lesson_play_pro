@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
+
+<title>wsrt</title>
+<style>
+:root{
+  --neon-gold: 0 0 14px rgba(255,200,0,0.95), 0 0 36px rgba(255,180,0,0.25);
+  --neon-orange: 0 0 12px rgba(255,138,43,0.95), 0 0 26px rgba(255,138,43,0.22);
+  --bg-url: url("https://i.postimg.cc/Bbr9QckW/Dizajn-bez-nazvania-15.png");
+}
+html,body{
+  height:100%;
+  margin:0;
+  font-family:'roboto condensed', sans-serif;
+  background:var(--bg-url) center/cover no-repeat;
+  overflow:hidden;
+  color:#000;
+}
+.app{
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  padding:10px;
+  box-sizing:border-box;
+  gap:10px;
+}
+.top{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.title{
+  font-weight:700;
+  font-size:36px;
+}
+.controls{
+  margin-left:auto;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.controls select,
+.controls input[type=range]{cursor:pointer}
+.main{
+  display:flex;
+  flex:1;
+  gap:12px;
+  min-height:0;
+}
+.left{
+  width:360px;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  padding:8px;
+  background:rgba(255,255,255,0.75);
+  border-radius:10px;
+  box-sizing:border-box;
+  align-content:start;
+  height:100%;
+}
+.pic{
+  background:rgba(255,255,255,0.75);
+  border-radius:8px;
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  position:relative;
+}
+.pic img{
+  width:100%;
+  height:95px;
+  object-fit:contain;
+  user-select:none;
+  pointer-events:none;
+}
+.pic .name{
+  margin-top:6px;
+  font-size:18px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  width:100%;
+  text-align:center;
+  color:#000;
+}
+.check{
+  position:absolute;
+  left:8px;
+  bottom:8px;
+  width:26px;
+  height:26px;
+  border-radius:6px;
+  border:2px solid #000 !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  background:#fff;
+  color:#fff;
+  font-weight:700;
+}
+.check.checked{
+  background:var(--gold,#f5c542);
+  box-shadow:var(--neon-gold);
+  color:#2b1600;
+}
+.pic.found{
+  box-shadow:var(--neon-gold);
+  border:2px solid rgba(245,197,66,0.5);
+}
+.center{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+}
+.grid-wrap{
+  background:rgba(255,255,255,0.75);
+  padding:12px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+#grid{
+  display:grid;
+  gap:6px;
+  user-select:none;
+}
+.cell{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:6px;
+  background:rgba(255,255,255,0.05);
+  font-weight:700;
+  transition:box-shadow .08s,transform .08s,background .12s,color .12s;
+  touch-action:none;
+}
+.cell.neon{box-shadow:var(--neon-gold);transform:scale(1.02)}
+.cell.wiggle{animation:wiggle .2s linear}
+.cell.highlight-confirm{
+  outline:3px solid transparent;
+  border-radius:6px;
+  box-shadow:var(--neon-gold) inset,0 0 8px rgba(255,200,0,0.3);
+}
+.cell.found{
+  box-shadow:var(--neon-gold);
+  color:#2a1700;
+  background:linear-gradient(90deg,#fff5d0,#ffd88a);
+}
+.cell.correct-outline{box-shadow:var(--neon-gold)}
+.cell.wrong-outline{box-shadow:var(--neon-orange)}
+.cell:hover{box-shadow:0 0 8px gold,0 0 4px gold inset;transform:scale(1.05);transition:0.12s;color:gold}
+@keyframes wiggle{0%{transform:translateY(0)}50%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+.right{
+  width:220px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:8px;
+  background:rgba(255,255,255,0.75);
+  border-radius:10px;
+  box-sizing:border-box;
+}
+.counter{
+  padding:6px 8px;
+  border-radius:8px;
+  background:rgba(0,0,0,0.35);
+  text-align:center;
+}
+.word-item{
+  padding:8px;
+  border-radius:8px;
+  background:rgba(255,255,255,0.03);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:20px;
+}
+.word-item.crossed{text-decoration:line-through;opacity:0.6}
+.hint{font-size:13px;color:rgba(255,255,255,0.85)}
+@media(max-width:1100px){.left{display:none}}
+@media(max-width:800px){.right{display:none}}
+#win-overlay{
+  position:fixed;left:0;top:0;width:100vw;height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.55);
+  z-index:9999;opacity:0;pointer-events:none;
+  transition:opacity .25s;
+}
+#win-overlay.show{opacity:1;pointer-events:auto}
+.win-box{color:#000;text-align:center}
+.win-title{
+  font-size:48px;font-weight:800;margin-bottom:12px;
+  letter-spacing:2px;text-shadow:0 0 12px rgba(255,215,0,0.9);
+}
+.confetti{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:10000}
+.confetti .piece{
+  position:absolute;width:6px;height:10px;border-radius:2px;opacity:0.95;transform-origin:center;
+  animation:fall linear forwards;box-shadow:0 0 6px rgba(0,0,0,0.2);
+}
+@keyframes fall{
+  0%{transform:translateY(-10vh) rotate(0) scale(1);opacity:1}
+  100%{transform:translateY(110vh) rotate(720deg) scale(1);opacity:0.9}
+}
+@keyframes twinkle{0%{opacity:0.6}50%{opacity:1}100%{opacity:0.6}}
+.particle-gold{background:linear-gradient(90deg,#ffd86a,#ffd800);animation:twinkle 1.2s infinite;}
+.particle-silver{background:linear-gradient(90deg,#f0f0f0,#cccccc);animation:twinkle 1.1s infinite;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="title">Wordsearch</div>
+    <div class="controls">
+      <label style="color:#000">Grid
+        <select id="grid-select">
+          <option value="10">10×10</option>
+          <option value="12" selected>12×12</option>
+        </select>
+      </label>
+      <label style="color:#000">Font
+        <input id="font-range" type="range" min="14" max="36" value="22" />
+      </label>
+      <button id="btn-restart" style="padding:6px 10px;border-radius:8px;cursor:pointer">Restart</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="left" id="left-col"></div>
+    <div class="center">
+      <div class="grid-wrap" id="grid-wrap">
+        <div id="grid"></div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="counter" id="counter">0/0</div>
+      <div id="word-list"></div>
+    </div>
+  </div>
+</div>
+<div id="win-overlay" aria-hidden="true">
+  <div class="win-box">
+    <div class="win-title">Good job!</div>
+  </div>
+</div>
+<div class="confetti" id="confetti"></div>
+<script>
+const alphabet="EN";
+const LETTER_CASE="uppercase"; 
+const wordsLevel1=["PARROT","LIZARD","LION","TIGER","FROG", "BEAR","HORSE","ELEPHANT","GOLDFISH","PANDA"];
+const imagesLevel1=[
+  "../../assets/12-10.webp",
+  "../../assets/12-11.webp",
+  "../../assets/12-4.webp",
+  "../../assets/12-0.webp",
+  "https://i.postimg.cc/2yZhghZ2/Dizajn-bez-nazvania-17.png",
+  "../../assets/12-1.webp",
+  "../../assets/12-8.webp",
+  "../../assets/12-7.webp",
+  "../../assets/12-6.webp",
+  "../../assets/12-5.webp"
+];
+const ALPHABETS={
+  EN:"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  RU:"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
+  KO:"가나다라마바사아자차카타파하거너더러머버서어저"
+};
+
+let GRID_SIZE=12, fontSize=22;
+const state={grid:[],placed:[],foundWords:new Set(),currentSelection:[],selectedCandidate:null};
+
+function randInt(n){return Math.floor(Math.random()*n)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=randInt(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function makeEmptyGrid(n){return Array.from({length:n},()=>Array.from({length:n},()=>({ch:'',el:null})))}
+function canPlace(grid,word,r,c,dr,dc){const n=grid.length;for(let i=0;i<word.length;i++){const rr=r+dr*i,cc=c+dc*i;if(rr<0||rr>=n||cc<0||cc>=n)return false;const exists=grid[rr][cc].ch;if(exists && exists!=='' && exists!==word[i])return false;}return true}
+function placeWord(grid,word,r,c,dr,dc){const coords=[];for(let i=0;i<word.length;i++){const rr=r+dr*i,cc=c+dc*i;grid[rr][cc].ch=word[i];coords.push({r:rr,c:cc});}return coords}
+function tryPlaceAll(grid,words){const n=grid.length;const placed=[];const dirs=[[0,1],[1,0]];for(const w of words){let coords=null;for(let attempt=0;attempt<800&&!coords;attempt++){const [dr,dc]=dirs[randInt(2)];const r=randInt(n),c=randInt(n);if(canPlace(grid,w,r,c,dr,dc)){coords=placeWord(grid,w,r,c,dr,dc);break}}if(!coords){outer:for(let r=0;r<n;r++){for(let c=0;c<n;c++){for(const [dr,dc]of dirs){if(canPlace(grid,w,r,c,dr,dc)){coords=placeWord(grid,w,r,c,dr,dc);break outer}}}}}if(coords)placed.push({word:w,coords,found:false});else console.warn("!",w)}return placed}
+function fillGridRandom(grid,pool){for(let r=0;r<grid.length;r++){for(let c=0;c<grid.length;c++){if(!grid[r][c].ch||grid[r][c].ch==='')grid[r][c].ch=(LETTER_CASE==="uppercase"?pool[randInt(pool.length)].toUpperCase():pool[randInt(pool.length)].toLowerCase());}}}
+
+const leftCol=document.getElementById('left-col');
+const gridEl=document.getElementById('grid');
+const gridWrap=document.getElementById('grid-wrap');
+const wordListEl=document.getElementById('word-list');
+const counterEl=document.getElementById('counter');
+const winOverlay=document.getElementById('win-overlay');
+const confettiRoot=document.getElementById('confetti');
+
+function computeCellSize(n){const target=Math.min(560,window.innerHeight*0.72);const gap=6;return Math.max(22,Math.floor((target-(n-1)*gap)/n));}
+
+function renderGrid(){
+  gridEl.innerHTML='';
+  const n=state.grid.length;
+  const cellSize=computeCellSize(n);
+  gridEl.style.gridTemplateColumns=`repeat(${n},${cellSize}px)`;
+  gridEl.style.width=`${cellSize*n+(n-1)*6}px`;
+  gridEl.style.height=`${cellSize*n+(n-1)*6}px`;
+  for(let r=0;r<n;r++){for(let c=0;c<n;c++){
+    const cell=state.grid[r][c];
+    const div=document.createElement('div');
+    div.className='cell';
+    div.textContent=cell.ch;
+    div.style.width=cellSize+'px';
+    div.style.height=cellSize+'px';
+    const autoFont=Math.max(12,Math.floor(cellSize*0.56));
+    div.style.fontSize=Math.min(fontSize,autoFont)+'px';
+    div.dataset.r=r; div.dataset.c=c;
+    cell.el=div;
+    gridEl.appendChild(div);
+  }}
+}
+
+function renderLeftImages(){leftCol.innerHTML='';for(let i=0;i<wordsLevel1.length;i++){const w=wordsLevel1[i];const imgSrc=imagesLevel1[i]||'';const card=document.createElement('div');card.className='pic';card.dataset.index=i;card.innerHTML=`<img src="${imgSrc}" alt="${w}"></div><div class="check" data-index="${i}"></div>`;leftCol.appendChild(card);}}
+function renderWordList(){wordListEl.innerHTML='';for(const w of wordsLevel1){const item=document.createElement('div');item.className='word-item';item.dataset.word=w;item.textContent=w;wordListEl.appendChild(item);}updateCounter();}
+function updateCounter(){counterEl.textContent=`${state.foundWords.size}/${wordsLevel1.length}`}
+
+function coordsToString(coords){return coords.map(p=>state.grid[p.r][p.c].ch).join('');}
+function findPlacementByString(s){for(const pl of state.placed){if(pl.found)continue;if(pl.word===s)return pl;}return null;}
+function clearCurrentSelection(){for(const p of state.currentSelection){const el=state.grid[p.r][p.c].el;if(el)el.classList.remove('neon','wiggle','highlight-confirm','correct-outline','wrong-outline');}state.currentSelection=[];state.selectedCandidate=null;}
+function keepSelectionAsCandidate(coords,wordStr){state.currentSelection=coords.slice();state.selectedCandidate={word:wordStr,coords:coords.slice()};for(const p of coords){const el=state.grid[p.r][p.c].el;if(el)el.classList.add('highlight-confirm');}}
+function markCellsFound(coords){for(const p of coords){const el=state.grid[p.r][p.c].el;if(el){el.classList.remove('highlight-confirm','neon');el.classList.add('found');}}}
+
+let pointerActive=false;
+function startSelection(r,c){clearCurrentSelection();pointerActive=true;state.currentSelection=[{r,c}];state.grid[r][c].el.classList.add('neon');}
+function addSelection(r,c){if(!pointerActive)return;const sel=state.currentSelection;if(sel.some(s=>s.r===r && s.c===c))return;const last=sel[sel.length-1];if(sel.length===1){if(!(r===last.r||c===last.c))return;}else{const dirR=last.r-sel[sel.length-2].r;const dirC=last.c-sel[sel.length-2].c;if((r-last.r)!==dirR||(c-last.c)!==dirC)return;}const dr=Math.abs(r-last.r),dc=Math.abs(c-last.c);if(!((dr===1&&dc===0)||(dr===0&&dc===1)))return;sel.push({r,c});const el=state.grid[r][c].el;el.classList.add('neon','wiggle');setTimeout(()=>el.classList.remove('wiggle'),200);}
+function endSelection(){pointerActive=false;if(state.currentSelection.length===0)return;const s=coordsToString(state.currentSelection);const pl=findPlacementByString(s);if(pl){keepSelectionAsCandidate(state.currentSelection,s);}else{for(const p of state.currentSelection){const el=state.grid[p.r][p.c].el;if(el)el.classList.add('wrong-outline');}setTimeout(()=>{for(const p of state.currentSelection){const el=state.grid[p.r][p.c].el;if(el)el.classList.remove('wrong-outline','neon');}state.currentSelection=[];},600);}}
+
+function onCheckClick(idx,elCheck){const targetWord=wordsLevel1[idx];if(state.selectedCandidate && state.selectedCandidate.word.toLowerCase()===targetWord.toLowerCase()){const pl=state.placed.find(p=>p.word.toLowerCase()===targetWord.toLowerCase());if(pl && !pl.found){pl.found=true;markCellsFound(pl.coords);const card=leftCol.querySelector(`.pic[data-index="${idx}"]`);if(card)card.classList.add('found');elCheck.classList.add('checked');state.foundWords.add(targetWord);updateCounter();const listItem=[...wordListEl.children].find(it=>it.dataset.word===targetWord);if(listItem)listItem.classList.add('crossed');state.selectedCandidate=null;state.currentSelection=[];if(state.foundWords.size===wordsLevel1.length)showWinOverlay();}}else{const card=leftCol.querySelector(`.pic[data-index="${idx}"]`);if(card)card.classList.add('wiggle');setTimeout(()=>card.classList.remove('wiggle'),400);}}
+
+function showWinOverlay(){winOverlay.classList.add('show');createConfetti(80);}
+function createConfetti(count){confettiRoot.innerHTML='';const w=window.innerWidth;const colors=['#ffd86a','#ffd800','#f0f0f0','#cccccc'];for(let i=0;i<count;i++){const el=document.createElement('div');el.className='piece '+(i%2? 'particle-gold':'particle-silver');el.style.left=(Math.random()*w)+'px';el.style.top=(-Math.random()*20-5)+'vh';el.style.width=(4+Math.random()*6)+'px';el.style.height=(6+Math.random()*10)+'px';el.style.opacity=0.95;const dur=1.5+Math.random()*1.2;const delay=Math.random()*0.5;el.style.animationDuration=dur+'s';el.style.animationDelay=delay+'s';confettiRoot.appendChild(el);setTimeout(()=>{if(el && el.parentNode)el.parentNode.removeChild(el);},(dur+delay)*1000+800);}}
+
+function init(){
+  state.foundWords.clear();
+  state.currentSelection=[];
+  state.selectedCandidate=null;
+  updateCounter();
+  GRID_SIZE=Number(document.getElementById('grid-select').value)||12;
+  fontSize=Number(document.getElementById('font-range').value)||22;
+  state.grid=makeEmptyGrid(GRID_SIZE);
+  const wordsToPlace=wordsLevel1.map(w=>LETTER_CASE==="uppercase"?w.replace(/ /g,'_').toUpperCase():w.replace(/ /g,'_').toLowerCase());
+  state.placed=tryPlaceAll(state.grid,shuffle(wordsToPlace.slice()));
+  fillGridRandom(state.grid,(ALPHABETS[alphabet]||ALPHABETS.EN).split(''));
+  renderLeftImages();
+  renderGrid();
+  renderWordList();
+  document.querySelectorAll('.check').forEach(ch=>{ch.classList.remove('checked');ch.addEventListener('click',e=>{const idx=Number(e.currentTarget.dataset.index);onCheckClick(idx,e.currentTarget);});});
+  gridEl.addEventListener('pointerdown',ev=>{ev.preventDefault();const t=ev.target.closest('.cell');if(!t)return;startSelection(+t.dataset.r,+t.dataset.c);});
+  gridEl.addEventListener('pointermove',ev=>{if(!pointerActive)return;const under=document.elementFromPoint(ev.clientX,ev.clientY);const cell=under?.closest?.('.cell');if(!cell)return;addSelection(+cell.dataset.r,+cell.dataset.c);});
+  window.addEventListener('pointerup',endSelection);
+  document.getElementById('btn-restart').addEventListener('click',init);
+  document.getElementById('grid-select').addEventListener('change',()=>{init();});
+  document.getElementById('font-range').addEventListener('input',e=>{fontSize=Number(e.target.value);renderGrid();});
+}
+init();
+window.addEventListener('resize',()=>{renderGrid();});
+</script>
+</body>
+</html>
